@@ -1,7 +1,7 @@
 #!/bin/sh
 cd `dirname $0`
 
-$PYTHON="venv/bin/python"
+PYTHON="venv/bin/python"
 
 python3 -m venv venv
 $PYTHON -m pip install -r requirements.txt
