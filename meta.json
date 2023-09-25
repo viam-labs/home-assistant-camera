@@ -1,7 +1,7 @@
 {
   "module_id": "hipsterbrown:home-assistant-camera",
   "visibility": "public",
-  "url": "",
+  "url": "https://github.com/viam-labs/home-assistant-camera",
   "description": "Proxy images from a camera on the local network via Home Assistant.",
   "models": [
     {
