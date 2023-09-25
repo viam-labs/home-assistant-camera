@@ -1,29 +1,70 @@
-from typing import ClassVar, Mapping, Sequence, Any, Dict, Optional, cast
+from typing import ClassVar, Mapping, Any, Dict, Optional, Union, Tuple
 from typing_extensions import Self
 
 from viam.module.types import Reconfigurable
 from viam.proto.app.robot import ComponentConfig
-from viam.proto.common import ResourceName, Vector3
+from viam.proto.common import ResourceName, ResponseMetadata
 from viam.resource.base import ResourceBase
 from viam.resource.types import Model, ModelFamily
 
-from viam.components.camera import Camera
+from viam.components.camera import (
+    Camera,
+    RawImage,
+    IntrinsicParameters,
+    DistortionParameters,
+)
 from viam.logging import getLogger
 
-import time
-import asyncio
+import requests
 
 LOGGER = getLogger(__name__)
+DEFAULT_HOST_ADDRESS = "homeassistant.local:8123"
+
+
+class Client:
+    """Session wrapper for communicating with HA API."""
+
+    def __init__(self, host_address: str, access_token: str) -> None:
+        self.host_address = host_address
+        self.access_token = access_token
+        self.session = requests.Session()
+        return
+
+    def close(self) -> None:
+        self.session.close()
+
+    def camera_proxy(self, entity_id: str) -> None | bytes:
+        """Retrieve latest image from camera, in bytes"""
+        response = self.session.get(
+            f"{self.host_address}/api/camera_proxy/{entity_id}",
+            headers=self.headers,
+        )
+        if response.raise_for_status() is None:
+            return response.content
+
+    @property
+    def headers(self):
+        return {
+            "Authorization": f"Bearer {self.access_token}",
+            "Content-Type": "application/json",
+        }
+
 
 class homeassistant(Camera, Reconfigurable):
-    MODEL: ClassVar[Model] = Model(ModelFamily("hipsterbrown", "camera"), "homeassistant")
-    
-    # create any class parameters here, 'some_pin' is used as an example (change/add as needed)
-    some_pin: int
+    MODEL: ClassVar[Model] = Model(
+        ModelFamily("hipsterbrown", "camera"), "homeassistant"
+    )
+
+    host_address: str
+    access_token: str
+    entity_id: str
+    client: Client
 
     # Constructor
     @classmethod
-    def new(cls, config: ComponentConfig, dependencies: Mapping[ResourceName, ResourceBase]) -> Self:
+    def new(
+        cls, config: ComponentConfig, dependencies: Mapping[ResourceName, ResourceBase]
+    ) -> Self:
         my_class = cls(config.name)
         my_class.reconfigure(config, dependencies)
         return my_class
@@ -31,23 +72,46 @@ class homeassistant(Camera, Reconfigurable):
     # Validates JSON Configuration
     @classmethod
     def validate(cls, config: ComponentConfig):
-        # here we validate config, the following is just an example and should be updated as needed
-        some_pin = config.attributes.fields["some_pin"].number_value
-        if some_pin == "":
-            raise Exception("A some_pin must be defined")
-        return
+        # validate config
+        access_token = config.attributes.fields["access_token"].string_value
+        if access_token == "":
+            raise Exception("An access_token must be provided")
+
+        entity_id = config.attributes.fields["entity_id"].string_value
+        if entity_id == "":
+            raise Exception("An entity_id must be defined")
+
+        return []
 
     # Handles attribute reconfiguration
-    def reconfigure(self, config: ComponentConfig, dependencies: Mapping[ResourceName, ResourceBase]):
-        # here we initialize the resource instance, the following is just an example and should be updated as needed
-        self.some_pin = int(config.attributes.fields["some_pin"].number_value)
+    def reconfigure(
+        self, config: ComponentConfig, dependencies: Mapping[ResourceName, ResourceBase]
+    ):
+        # cleanup old client if exists
+        if self.client:
+            self.client.close()
+
+        # here we initialize the resource instance
+        self.host_address = str(
+            config.attributes.fields.get("host_address", DEFAULT_HOST_ADDRESS)
+        )
+        self.access_token = str(config.attributes.fields["access_token"].string_value)
+        self.entity_id = str(config.attributes.fields["entity_id"].string_value)
+        self.client = Client(
+            self.host_address,
+            self.access_token,
+        )
         return
 
     """ Implement the methods the Viam RDK defines for the Camera API (rdk:components:camera) """
 
-    
     async def get_image(
-        self, mime_type: str = "", *, extra: Optional[Dict[str, Any]] = None, timeout: Optional[float] = None, **kwargs
+        self,
+        mime_type: str = "",
+        *,
+        extra: Optional[Dict[str, Any]] = None,
+        timeout: Optional[float] = None,
+        **kwargs,
     ) -> Union[Image, RawImage]:
         """Get the next image from the camera as an Image or RawImage.
         Be sure to close the image when finished.
@@ -61,10 +125,13 @@ class homeassistant(Camera, Reconfigurable):
         Returns:
             Image | RawImage: The frame
         """
-        ...
+        bytes = self.client.camera_proxy(self.entity_id)
+        if bytes is not None:
+            return RawImage(bytes, "image/jpeg")
 
-    
-    async def get_images(self, *, timeout: Optional[float] = None, **kwargs) -> Tuple[List[NamedImage], ResponseMetadata]:
+    async def get_images(
+        self, *, timeout: Optional[float] = None, **kwargs
+    ) -> Tuple[List[NamedImage], ResponseMetadata]:
         """Get simultaneous images from different imagers, along with associated metadata.
         This should not be used for getting a time series of images from the same imager.
 
@@ -76,11 +143,14 @@ class homeassistant(Camera, Reconfigurable):
                 - ResponseMetadata:
                   The metadata associated with this response
         """
-        ...
+        raise NotImplementedError("Method is not available for this module")
 
-    
     async def get_point_cloud(
-        self, *, extra: Optional[Dict[str, Any]] = None, timeout: Optional[float] = None, **kwargs
+        self,
+        *,
+        extra: Optional[Dict[str, Any]] = None,
+        timeout: Optional[float] = None,
+        **kwargs,
     ) -> Tuple[bytes, str]:
         """
         Get the next point cloud from the camera. This will be
@@ -107,15 +177,15 @@ class homeassistant(Camera, Reconfigurable):
             bytes: The pointcloud data.
             str: The mimetype of the pointcloud (e.g. PCD).
         """
-        ...
+        raise NotImplementedError("Method is not available for this module")
 
-    
-    async def get_properties(self, *, timeout: Optional[float] = None, **kwargs) -> Properties:
+    async def get_properties(
+        self, *, timeout: Optional[float] = None, **kwargs
+    ) -> Camera.Properties:
         """
         Get the camera intrinsic parameters and camera distortion parameters
 
         Returns:
             Properties: The properties of the camera
         """
-        ...
-
+        return Camera.Properties(False, IntrinsicParameters(), DistortionParameters())
