@@ -89,13 +89,10 @@ class homeassistant(Camera, Reconfigurable):
     def reconfigure(
         self, config: ComponentConfig, dependencies: Mapping[ResourceName, ResourceBase]
     ):
-        # cleanup old client if exists
-        if self.client:
-            self.client.close()
-
         # here we initialize the resource instance
         self.host_address = str(
-            config.attributes.fields.get("host_address", DEFAULT_HOST_ADDRESS)
+            config.attributes.fields["host_address"].string_value
+            or DEFAULT_HOST_ADDRESS
         )
         self.access_token = str(config.attributes.fields["access_token"].string_value)
         self.entity_id = str(config.attributes.fields["entity_id"].string_value)
