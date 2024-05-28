@@ -1,4 +1,4 @@
-from typing import ClassVar, Mapping, Any, Dict, Optional, Union, Tuple, List
+from typing import ClassVar, Mapping, Any, Dict, Optional, Tuple, List
 from typing_extensions import Self
 
 from viam.module.types import Reconfigurable
@@ -6,12 +6,11 @@ from viam.proto.app.robot import ComponentConfig
 from viam.proto.common import ResourceName, ResponseMetadata
 from viam.resource.base import ResourceBase
 from viam.resource.types import Model, ModelFamily
-from viam.media.video import NamedImage
-from PIL.Image import Image
+from viam.media.video import CameraMimeType, NamedImage
 
 from viam.components.camera import (
     Camera,
-    RawImage,
+    ViamImage,
     IntrinsicParameters,
     DistortionParameters,
 )
@@ -111,7 +110,7 @@ class homeassistant(Camera, Reconfigurable):
         extra: Optional[Dict[str, Any]] = None,
         timeout: Optional[float] = None,
         **kwargs,
-    ) -> Union[Image, RawImage]:
+    ) -> ViamImage:
         """Get the next image from the camera as an Image or RawImage.
         Be sure to close the image when finished.
 
@@ -126,8 +125,8 @@ class homeassistant(Camera, Reconfigurable):
         """
         bytes = self.client.camera_proxy(self.entity_id)
         if bytes is not None:
-            return RawImage(bytes, "image/jpeg")
-        return RawImage(b"", "image/jpeg")
+            return ViamImage(bytes, CameraMimeType.JPEG)
+        return ViamImage(b"", CameraMimeType.JPEG)
 
     async def get_images(
         self, *, timeout: Optional[float] = None, **kwargs
