@@ -7,6 +7,7 @@ from viam.proto.common import ResourceName, ResponseMetadata
 from viam.resource.base import ResourceBase
 from viam.resource.types import Model, ModelFamily
 from viam.media.video import CameraMimeType, NamedImage
+from viam.utils import struct_to_dict
 
 from viam.components.camera import (
     Camera,
@@ -73,12 +74,13 @@ class homeassistant(Camera, Reconfigurable):
     # Validates JSON Configuration
     @classmethod
     def validate(cls, config: ComponentConfig):
+        attrs = struct_to_dict(config.attributes)
         # validate config
-        access_token = config.attributes.fields["access_token"].string_value
+        access_token = attrs.get("access_token", "")
         if access_token == "":
             raise Exception("An access_token must be provided")
 
-        entity_id = config.attributes.fields["entity_id"].string_value
+        entity_id = attrs.get("entity_id", "")
         if entity_id == "":
             raise Exception("An entity_id must be defined")
 
@@ -88,13 +90,11 @@ class homeassistant(Camera, Reconfigurable):
     def reconfigure(
         self, config: ComponentConfig, dependencies: Mapping[ResourceName, ResourceBase]
     ):
+        attrs = struct_to_dict(config.attributes)
         # here we initialize the resource instance
-        self.host_address = str(
-            config.attributes.fields["host_address"].string_value
-            or DEFAULT_HOST_ADDRESS
-        )
-        self.access_token = str(config.attributes.fields["access_token"].string_value)
-        self.entity_id = str(config.attributes.fields["entity_id"].string_value)
+        self.host_address = attrs.get("host_address", DEFAULT_HOST_ADDRESS)
+        self.access_token = attrs.get("access_token", "")
+        self.entity_id = attrs.get("entity_id", "")
         self.client = Client(
             self.host_address,
             self.access_token,
@@ -121,7 +121,7 @@ class homeassistant(Camera, Reconfigurable):
             mime_type (str): The desired mime type of the image. This does not guarantee output type
 
         Returns:
-            Image | RawImage: The frame
+            ViamImage: The frame
         """
         bytes = self.client.camera_proxy(self.entity_id)
         if bytes is not None:
