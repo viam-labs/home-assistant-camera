@@ -24,39 +24,36 @@ This is the identifier name of the Camera entity defined in Home Assistant. A li
 
 ## SDK Usage
 
-After adding and configuring this module for your machine through the Viam app, the "Code Sample" tab will demonstrate how to use it with the SDK:
+After adding and configuring this module for your machine through the Viam app, the "Connect->Code Sample" tab will demonstrate how to use it with the SDK:
 
 ```python
 import asyncio
 
 from viam.robot.client import RobotClient
-from viam.rpc.dial import Credentials, DialOptions
 from viam.components.camera import Camera
 
 async def connect():
-    creds = Credentials(
-        type='robot-location-secret',
-		# Replace "<SECRET>" (including brackets) with your robot's secret
-        payload='<SECRET>')
-    opts = RobotClient.Options(
-        refresh_interval=0,
-        dial_options=DialOptions(credentials=creds)
+    opts = RobotClient.Options.with_api_key(
+            # Replace "<API-KEY>" (including brackets) with your machine's api key 
+        api_key='<API-KEY>',
+        # Replace "<API-KEY-ID>" (including brackets) with your machine's api key id
+        api_key_id='<API-KEY-ID>'
     )
-    return await RobotClient.at_address('<Robot Location>', opts)
+    return await RobotClient.at_address('<Robot Address>', opts)
 
 async def main():
-    robot = await connect()
+    machine = await connect()
 
     print('Resources:')
-    print(robot.resource_names)
+    print(machine.resource_names)
     
     # backyard
-    backyard = Camera.from_robot(robot, "backyard")
+    backyard = Camera.from_robot(machine, "backyard")
     backyard_return_value = await backyard.get_image()
     print(f"backyard get_image return value: {backyard_return_value}")
 
     # Don't forget to close the robot when you're done!
-    await robot.close()
+    await machine.close()
 
 if __name__ == '__main__':
     asyncio.run(main())
