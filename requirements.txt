@@ -1,2 +1,2 @@
-viam-sdk==v0.32.0
+viam-sdk==v0.63.0
 requests

@@ -8,7 +8,7 @@ from viam.resource.registry import Registry, ResourceCreatorRegistration
 from .homeassistant import homeassistant
 
 Registry.register_resource_creator(
-    Camera.SUBTYPE,
+    Camera.API,
     homeassistant.MODEL,
     ResourceCreatorRegistration(homeassistant.new, homeassistant.validate),
 )

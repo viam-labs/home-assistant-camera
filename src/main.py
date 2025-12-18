@@ -13,7 +13,7 @@ async def main(address: str):
         address (str): The address to serve the module on
     """
     module = Module(address)
-    module.add_model_from_registry(Camera.SUBTYPE, homeassistant.MODEL)
+    module.add_model_from_registry(Camera.API, homeassistant.MODEL)
     await module.start()
 
 

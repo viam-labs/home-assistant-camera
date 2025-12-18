@@ -142,7 +142,9 @@ class homeassistant(Camera, Reconfigurable):
                 - ResponseMetadata:
                   The metadata associated with this response
         """
-        raise NotImplementedError("Method is not available for this module")
+        viam_image = await self.get_image()
+        named_image = NamedImage("image", viam_image.data, viam_image.mime_type)
+        return [named_image], ResponseMetadata()
 
     async def get_point_cloud(
         self,
