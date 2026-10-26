@@ -1,23 +1,21 @@
-from typing import ClassVar, Mapping, Any, Dict, Optional, Tuple, List
-from typing_extensions import Self
+from typing import Any, ClassVar, Dict, List, Mapping, Optional, Tuple
 
+import requests
+from typing_extensions import Self
+from viam.components.camera import (
+    Camera,
+    DistortionParameters,
+    IntrinsicParameters,
+    ViamImage,
+)
+from viam.logging import getLogger
+from viam.media.video import CameraMimeType, NamedImage
 from viam.module.types import Reconfigurable
 from viam.proto.app.robot import ComponentConfig
 from viam.proto.common import ResourceName, ResponseMetadata
 from viam.resource.base import ResourceBase
 from viam.resource.types import Model, ModelFamily
-from viam.media.video import CameraMimeType, NamedImage
 from viam.utils import struct_to_dict
-
-from viam.components.camera import (
-    Camera,
-    ViamImage,
-    IntrinsicParameters,
-    DistortionParameters,
-)
-from viam.logging import getLogger
-
-import requests
 
 LOGGER = getLogger(__name__)
 DEFAULT_HOST_ADDRESS = "homeassistant.local:8123"

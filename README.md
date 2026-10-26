@@ -32,21 +32,23 @@ import asyncio
 from viam.robot.client import RobotClient
 from viam.components.camera import Camera
 
+
 async def connect():
     opts = RobotClient.Options.with_api_key(
-            # Replace "<API-KEY>" (including brackets) with your machine's api key 
-        api_key='<API-KEY>',
+        # Replace "<API-KEY>" (including brackets) with your machine's api key
+        api_key="<API-KEY>",
         # Replace "<API-KEY-ID>" (including brackets) with your machine's api key id
-        api_key_id='<API-KEY-ID>'
+        api_key_id="<API-KEY-ID>",
     )
-    return await RobotClient.at_address('<Robot Address>', opts)
+    return await RobotClient.at_address("<Robot Address>", opts)
+
 
 async def main():
     machine = await connect()
 
-    print('Resources:')
+    print("Resources:")
     print(machine.resource_names)
-    
+
     # backyard
     backyard = Camera.from_robot(machine, "backyard")
     backyard_return_value = await backyard.get_image()
@@ -55,6 +57,7 @@ async def main():
     # Don't forget to close the robot when you're done!
     await machine.close()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     asyncio.run(main())
 ```

@@ -3,6 +3,7 @@ import sys
 
 from viam.components.camera import Camera
 from viam.module.module import Module
+
 from .homeassistant import homeassistant
 
 
